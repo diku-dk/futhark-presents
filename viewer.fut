@@ -25,10 +25,12 @@ let accel (epsilon: f32) ((pi, _, _, _):body) ((pj, mj, _, _): body)
   let s = mj * invr3
   in vec2.scale s r
 
-let bound_pos (maxx: f32) (maxy: f32) (({x,y}, mass, vel, c): body): body =
-  ({x=f32.min (f32.max 0f32 x) maxy,
-    y=f32.min (f32.max 0f32 y) maxx},
-   mass, vel, c)
+let bound_pos (maxx: f32) (maxy: f32) (({x,y}, mass, {x=dx,y=dy}, c): body): body =
+  let x' = f32.min (f32.max 0f32 x) maxy
+  let y' = f32.min (f32.max 0f32 y) maxx
+  let dx' = if x != x' then -dx else dx
+  let dy' = if y != y' then -dy else dy
+  in ({x=x',y=y'}, mass, {x=dx',y=dy'}, c)
 
 let calc_accels [n] (epsilon: f32) (bodies: [n]body) (attractors: []body): [n]acceleration =
   let move (body: body) =
@@ -65,9 +67,9 @@ let revert_bodies [n] (maxx: f32) (maxy: f32) (epsilon: f32) (time_step: f32) (b
          (map (advance_body maxx maxy time_step) (map friction bodies orig_bodies) accels)
          orig_bodies
 
-let only_nonwhites (bodies: []body) =
-  let not_white ((_, _, _, col): body) = col != argb.white
-  in filter not_white bodies
+let only_foreground (bg: argb.colour) (bodies: []body) =
+  let not_bg ((_, _, _, col): body) = col != bg
+  in filter not_bg bodies
 
 let bodies_from_pixels [h][w] (image: [h][w]i32): []body =
   let body_from_pixel (x: i32, y: i32) (pix: argb.colour) =
@@ -76,11 +78,11 @@ let bodies_from_pixels [h][w] (image: [h][w]i32): []body =
      (map (\(row, x) -> map (\(pix, y) -> body_from_pixel (x,y) pix) (zip row (iota w)))
             (zip image (iota h)))
 
-let bodies_from_image [h][w] (image: [h][w]i32): []body =
-  only_nonwhites (bodies_from_pixels image)
+let bodies_from_image [h][w] (bg: argb.colour) (image: [h][w]i32): []body =
+  only_foreground bg (bodies_from_pixels image)
 
-let render_body (_h: i32) (w: i32) (({x,y}, _, _, c): body): (i32, i32) =
-  if c == argb.white then (-1, c) else (i32.f32 x * w + i32.f32 y, c)
+let render_body (bg: argb.colour) (_h: i32) (w: i32) (({x,y}, _, _, c): body): (i32, i32) =
+  if c == bg then (-1, c) else (i32.f32 x * w + i32.f32 y, c)
 
 type state [h][w] = { image: [h][w]i32
                     , bodies: []body
@@ -99,16 +101,17 @@ entry load_image [h][w] (image: [w][h][3]u8) (background: argb.colour): state [h
     , orig_bodies = empty(body)
     , offset = 0
     , reverting = false
-    , background }
+    , background = background | 0xFF000000 -- Force full opacity.
+    }
 
 entry render [h][w] (state: state [h][w]): [h][w]i32 =
  if length state.bodies == 0
  then state.image
- else let (is, vs) = unzip (map (render_body h w) state.bodies)
+ else let (is, vs) = unzip (map (render_body state.background h w) state.bodies)
       in reshape (h,w) (scatter (replicate (w*h) state.background) is vs)
 
 entry start_nbody [h][w] (state: state [h][w]): state [h][w] =
-  let bodies = bodies_from_image state.image
+  let bodies = bodies_from_image state.background state.image
   in { image = state.image,
        bodies = bodies,
        orig_bodies = bodies,

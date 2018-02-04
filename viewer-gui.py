@@ -18,8 +18,7 @@ def compute_background(img):
     colors[:,:] += numpy.uint32(img[:,:,1]) << 8
     colors[:,:] += numpy.uint32(img[:,:,2]) << 0
     (values,counts) = numpy.unique(colors,return_counts=True)
-    ind=numpy.argmax(counts)
-    return values[ind]
+    return values[numpy.argmax(counts)]
 
 slides = map(load_slide, sys.argv[1:])
 
