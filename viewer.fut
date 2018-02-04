@@ -25,15 +25,15 @@ let accel (epsilon: f32) ((pi, _, _, _):body) ((pj, mj, _, _): body)
   let s = mj * invr3
   in vec2.scale s r
 
-let bound_pos (maxx: f32) (maxy: f32) (((x,y), mass, vel, c): body): body =
-  ((f32.min (f32.max 0f32 x) maxy,
-    f32.min (f32.max 0f32 y) maxx),
+let bound_pos (maxx: f32) (maxy: f32) (({x,y}, mass, vel, c): body): body =
+  ({x=f32.min (f32.max 0f32 x) maxy,
+    y=f32.min (f32.max 0f32 y) maxx},
    mass, vel, c)
 
 let calc_accels [n] (epsilon: f32) (bodies: [n]body) (attractors: []body): [n]acceleration =
   let move (body: body) =
         let accels = map (accel epsilon body) attractors
-        in (reduce_comm (vec2.+) (0f32, 0f32) accels)
+        in (reduce_comm (vec2.+) {x=0f32, y=0f32} accels)
   in map move bodies
 
 let advance_body (maxx: f32) (maxy: f32) (time_step: f32) ((pos, mass, vel, c):body) (acc:acceleration): body =
@@ -47,7 +47,7 @@ let advance_bodies [n] (maxx: f32) (maxy: f32) (epsilon: f32) (time_step: f32) (
   in map (advance_body maxx maxy time_step) bodies accels
 
 let calc_revert_accels [n] (epsilon: f32) (bodies: []body) (orig_bodies: [n]body): []acceleration =
-  let weighten ((pos, mass, vel, c): body) =
+  let weighten ((pos, _mass, vel, c): body) =
         (pos, 3000f32, vel, c)
   let move (body: body) (orig_body: body) =
         (accel epsilon body (weighten orig_body))
@@ -55,7 +55,7 @@ let calc_revert_accels [n] (epsilon: f32) (bodies: []body) (orig_bodies: [n]body
 
 let revert_bodies [n] (maxx: f32) (maxy: f32) (epsilon: f32) (time_step: f32) (bodies: [n]body) (orig_bodies: [n]body): [n]body =
   let accels = calc_revert_accels epsilon bodies orig_bodies
-  let friction ((pos, mass, vel, c): body) (orig_body: body) =
+  let friction ((pos, mass, vel, c): body) (_orig_body: body) =
         (pos, mass, vec2.scale 0.9f32 vel, c)
   let maybe_jump (body: body) (orig_body: body) =
         if dist body orig_body < 1f32
@@ -71,7 +71,7 @@ let only_nonwhites (bodies: []body) =
 
 let bodies_from_pixels [h][w] (image: [h][w]i32): []body =
   let body_from_pixel (x: i32, y: i32) (pix: argb.colour) =
-        ((f32.i32 x, f32.i32 y), mass_from_colour pix, (0f32, 0f32), pix)
+        ({x=f32.i32 x, y=f32.i32 y}, mass_from_colour pix, {x=0f32, y=0f32}, pix)
   in reshape (h*w)
      (map (\(row, x) -> map (\(pix, y) -> body_from_pixel (x,y) pix) (zip row (iota w)))
             (zip image (iota h)))
@@ -79,16 +79,17 @@ let bodies_from_pixels [h][w] (image: [h][w]i32): []body =
 let bodies_from_image [h][w] (image: [h][w]i32): []body =
   only_nonwhites (bodies_from_pixels image)
 
-let render_body (_h: i32) (w: i32) (((x,y), _, _, c): body): (i32, i32) =
+let render_body (_h: i32) (w: i32) (({x,y}, _, _, c): body): (i32, i32) =
   if c == argb.white then (-1, c) else (i32.f32 x * w + i32.f32 y, c)
 
 type state [h][w] = { image: [h][w]i32
                     , bodies: []body
                     , orig_bodies: []body
                     , offset: i32
-                    , reverting: bool }
+                    , reverting: bool
+                    , background: argb.colour }
 
-entry load_image [h][w] (image: [w][h][3]u8): state [h][w] =
+entry load_image [h][w] (image: [w][h][3]u8) (background: argb.colour): state [h][w] =
  let pack (pix: [3]u8) = argb.from_rgba (f32.u8 pix[0] / 255f32)
                                         (f32.u8 pix[1] / 255f32)
                                         (f32.u8 pix[2] / 255f32)
@@ -97,22 +98,27 @@ entry load_image [h][w] (image: [w][h][3]u8): state [h][w] =
     , bodies = empty(body)
     , orig_bodies = empty(body)
     , offset = 0
-    , reverting = false }
+    , reverting = false
+    , background }
 
 entry render [h][w] (state: state [h][w]): [h][w]i32 =
  if length state.bodies == 0
  then state.image
- else let background = argb.white
-      let (is, vs) = unzip (map (render_body h w) state.bodies)
-      in reshape (h,w) (scatter (replicate (w*h) background) is vs)
+ else let (is, vs) = unzip (map (render_body h w) state.bodies)
+      in reshape (h,w) (scatter (replicate (w*h) state.background) is vs)
 
 entry start_nbody [h][w] (state: state [h][w]): state [h][w] =
   let bodies = bodies_from_image state.image
-  in { image = state.image, bodies = bodies, orig_bodies = bodies, offset = length bodies / 2, reverting = false}
+  in { image = state.image,
+       bodies = bodies,
+       orig_bodies = bodies,
+       offset = length bodies / 2,
+       reverting = false,
+       background = state.background }
 
 entry bodies_and_flags (state: state [][]): ([]i32, []bool) =
   let bodies = bodies_from_pixels state.image
-  in ([0..<length bodies], map (\b -> b.4 != argb.white) bodies)
+  in (0..<length bodies, map (\b -> b.4 != state.background) bodies)
 
 entry start_nbody_prefiltered [h][w] (state: state [h][w]) (is: []i32): state [h][w] =
   let all_bodies = bodies_from_pixels state.image
@@ -121,15 +127,17 @@ entry start_nbody_prefiltered [h][w] (state: state [h][w]) (is: []i32): state [h
        bodies = bodies,
        offset = length bodies / 2,
        orig_bodies = bodies,
-       reverting = false }
+       reverting = false,
+       background = state.background }
 
-let num_attractors [n] (_bodies: [n]body) = (5000*5000) / n
+let chunk_size = 10000
+let num_attractors [n] (_bodies: [n]body) = n / chunk_size
 
-entry revert [h][w] ({image, bodies, offset, orig_bodies, reverting}: state [h][w]): state [h][w] =
-  { image, bodies, offset, orig_bodies, reverting = !reverting }
+entry revert [h][w] (state: state [h][w]): state [h][w] =
+  let {image, bodies, offset, orig_bodies, reverting, background} = state
+  in { image, bodies, offset, orig_bodies, reverting = !reverting, background }
 
-entry advance [h][w] ({image, bodies, offset, orig_bodies, reverting}: state [h][w]): state [h][w] =
-  let n = length bodies
+entry advance [h][w] ({image, bodies, offset, orig_bodies, reverting, background}: state [h][w]): state [h][w] =
   let chunk_size = i32.min (num_attractors bodies) (length bodies - offset)
   let attractors = bodies[offset:offset+chunk_size]
   let bodies' = if reverting
@@ -141,4 +149,5 @@ entry advance [h][w] ({image, bodies, offset, orig_bodies, reverting}: state [h]
        bodies = bodies',
        offset = if length bodies > 0
                 then (offset + num_attractors bodies) % length bodies
-                else 0 }
+                else 0,
+       background }

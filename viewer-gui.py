@@ -6,10 +6,20 @@ import numpy
 import pygame
 import time
 import sys
-from scipy import misc
+import imageio
+import png
 
 def load_slide(f):
-    return misc.imread(f, mode='RGB')
+    return numpy.array(imageio.imread(f))
+
+def compute_background(img):
+    colors = numpy.ndarray((img.shape[0], img.shape[1]), dtype=numpy.uint32)
+    colors[:,:]  = numpy.uint32(img[:,:,0]) << 16
+    colors[:,:] += numpy.uint32(img[:,:,1]) << 8
+    colors[:,:] += numpy.uint32(img[:,:,2]) << 0
+    (values,counts) = numpy.unique(colors,return_counts=True)
+    ind=numpy.argmax(counts)
+    return values[ind]
 
 slides = map(load_slide, sys.argv[1:])
 
@@ -34,7 +44,7 @@ def render(state):
 
 def new_state():
     return { 'slide_index': 0,
-             'viewer_state': viewer.load_image(slides[0]) }
+             'viewer_state': viewer.load_image(slides[0], compute_background(slides[0])) }
 
 desired_fps = 60.0
 
@@ -48,7 +58,7 @@ def change_slide(d, state):
     stop_running()
     i = min(len(slides)-1, max(state['slide_index'] + d, 0))
     state['slide_index'] = i
-    state['viewer_state'] = viewer.load_image(slides[i])
+    state['viewer_state'] = viewer.load_image(slides[i], compute_background(slides[i]))
 
 def start_nbody(state):
     # To work around a bug in either Futhark or Beignet, we perform
