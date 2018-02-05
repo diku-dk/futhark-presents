@@ -91,17 +91,16 @@ type state [h][w] = { image: [h][w]i32
                     , reverting: bool
                     , background: argb.colour }
 
-entry load_image [h][w] (image: [w][h][3]u8) (background: argb.colour): state [h][w] =
- let pack (pix: [3]u8) = argb.from_rgba (f32.u8 pix[0] / 255f32)
-                                        (f32.u8 pix[1] / 255f32)
-                                        (f32.u8 pix[2] / 255f32)
-                                        1f32
+entry load_image [h][w] (image: [w][h][3]u8) (background: [3]u8): state [h][w] =
+ let pack (pix: [3]u8) = (i32.u8 pix[0] << 16) |
+                         (i32.u8 pix[1] << 8) |
+                         (i32.u8 pix[2] << 0)
  in { image = transpose (map (\row -> map pack row) image)
     , bodies = empty(body)
     , orig_bodies = empty(body)
     , offset = 0
     , reverting = false
-    , background = background | 0xFF000000 -- Force full opacity.
+    , background = pack background
     }
 
 entry render [h][w] (state: state [h][w]): [h][w]i32 =
