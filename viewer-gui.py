@@ -22,7 +22,7 @@ def compute_background(img):
     bg = numpy.array([(pix>>16)&0xFF, (pix>>8)&0xFF, (pix>>0)&0xFF], dtype=numpy.uint8)
     return bg
 
-slides = map(load_slide, sys.argv[1:])
+slides = [ load_slide(f) for f in sys.argv[1:] ]
 
 viewer = viewer(interactive=1)
 
@@ -32,7 +32,7 @@ pygame.display.set_caption('Viewer')
 (height, width) = (slide_width, slide_height)
 size = (width, height)
 screen = pygame.display.set_mode(size)
-surface = pygame.Surface((slide_height, slide_width))
+surface = pygame.Surface((slide_height, slide_width), depth=32)
 
 def advance(state):
     state['viewer_state'] = viewer.advance(state['viewer_state'])
