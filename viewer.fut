@@ -46,14 +46,14 @@ let advance_body (maxx: f32) (maxy: f32) (time_step: f32) ((pos, mass, vel, c):b
 
 let advance_bodies [n] (maxx: f32) (maxy: f32) (epsilon: f32) (time_step: f32) (bodies: [n]body) (attractors: []body): [n]body =
   let accels = calc_accels epsilon bodies attractors
-  in map (advance_body maxx maxy time_step) bodies accels
+  in map2 (advance_body maxx maxy time_step) bodies accels
 
 let calc_revert_accels [n] (epsilon: f32) (bodies: []body) (orig_bodies: [n]body): []acceleration =
   let weighten ((pos, _mass, vel, c): body) =
         (pos, 3000f32, vel, c)
   let move (body: body) (orig_body: body) =
         (accel epsilon body (weighten orig_body))
-  in map move bodies orig_bodies
+  in map2 move bodies orig_bodies
 
 let revert_bodies [n] (maxx: f32) (maxy: f32) (epsilon: f32) (time_step: f32) (bodies: [n]body) (orig_bodies: [n]body): [n]body =
   let accels = calc_revert_accels epsilon bodies orig_bodies
@@ -63,9 +63,9 @@ let revert_bodies [n] (maxx: f32) (maxy: f32) (epsilon: f32) (time_step: f32) (b
         if dist body orig_body < 1f32
         then (orig_body.1, body.2, body.3, body.4)
         else body
-  in map maybe_jump
-         (map (advance_body maxx maxy time_step) (map friction bodies orig_bodies) accels)
-         orig_bodies
+  in map2 maybe_jump
+          (map2 (advance_body maxx maxy time_step) (map2 friction bodies orig_bodies) accels)
+          orig_bodies
 
 let only_foreground (bg: argb.colour) (bodies: []body) =
   let not_bg ((_, _, _, col): body) = col != bg
