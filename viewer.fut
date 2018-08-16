@@ -118,7 +118,7 @@ entry start_nbody [h][w] (state: state [h][w]): state [h][w] =
        reverting = false,
        background = state.background }
 
-entry bodies_and_flags (state: state [][]): ([]i32, []bool) =
+entry bodies_and_flags [h][w] (state: state [h][w]): ([]i32, []bool) =
   let bodies = bodies_from_pixels state.image
   in (0..<length bodies, map (\(_,_,_,bg) -> bg != state.background) bodies)
 
