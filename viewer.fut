@@ -1,12 +1,12 @@
-import "/futlib/colour"
-import "/futlib/vec2"
+import "lib/github.com/athas/matte/colour"
+import "lib/github.com/athas/vector/vspace"
 
-module vec2 = mk_vec2 f32
+module vec2 = mk_vspace_2d f32
 
 type mass = f32
-type position = vec2.vec
-type acceleration = vec2.vec
-type velocity = vec2.vec
+type position = vec2.vector
+type acceleration = vec2.vector
+type velocity = vec2.vector
 type body = (position, mass, velocity, argb.colour)
 
 let mass_from_colour (c: argb.colour): f32 =
@@ -74,7 +74,7 @@ let only_foreground (bg: argb.colour) (bodies: []body) =
 let bodies_from_pixels [h][w] (image: [h][w]i32): []body =
   let body_from_pixel (x: i32, y: i32) (pix: argb.colour) =
         ({x=f32.i32 x, y=f32.i32 y}, mass_from_colour pix, {x=0f32, y=0f32}, pix)
-  in reshape (h*w)
+  in flatten
      (map (\(row, x) -> map (\(pix, y) -> body_from_pixel (x,y) pix) (zip row (iota w)))
             (zip image (iota h)))
 
@@ -96,8 +96,8 @@ entry load_image [h][w] (image: [w][h][3]u8) (background: [3]u8): state [h][w] =
                          (i32.u8 pix[1] << 8) |
                          (i32.u8 pix[2] << 0)
  in { image = transpose (map (\row -> map pack row) image)
-    , bodies = empty(body)
-    , orig_bodies = empty(body)
+    , bodies = []
+    , orig_bodies = []
     , offset = 0
     , reverting = false
     , background = pack background
@@ -107,7 +107,7 @@ entry render [h][w] (state: state [h][w]): [h][w]i32 =
  if length state.bodies == 0
  then state.image
  else let (is, vs) = unzip (map (render_body state.background h w) state.bodies)
-      in reshape (h,w) (scatter (replicate (w*h) state.background) is vs)
+      in unflatten h w (scatter (replicate (w*h) state.background) is vs)
 
 entry start_nbody [h][w] (state: state [h][w]): state [h][w] =
   let bodies = bodies_from_image state.background state.image
