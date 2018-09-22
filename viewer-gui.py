@@ -10,7 +10,7 @@ import imageio
 import png
 
 def load_slide(f):
-    return numpy.array(imageio.imread(f))
+    return numpy.array(imageio.imread(f))[:768,:1024]
 
 def compute_background(img):
     colors = numpy.ndarray((img.shape[0], img.shape[1]), dtype=numpy.uint32)
