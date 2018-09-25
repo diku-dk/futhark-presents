@@ -50,7 +50,7 @@ let advance_bodies [n] (maxx: f32) (maxy: f32) (epsilon: f32) (time_step: f32) (
 
 let calc_revert_accels [n] (epsilon: f32) (bodies: []body) (orig_bodies: [n]body): []acceleration =
   let weighten ((pos, _mass, vel, c): body) =
-        (pos, 3000f32, vel, c)
+        (pos, 6000f32, vel, c)
   let move (body: body) (orig_body: body) =
         (accel epsilon body (weighten orig_body))
   in map2 move bodies orig_bodies
@@ -82,7 +82,9 @@ let bodies_from_image [h][w] (bg: argb.colour) (image: [h][w]i32): []body =
   only_foreground bg (bodies_from_pixels image)
 
 let render_body (bg: argb.colour) (_h: i32) (w: i32) (({x,y}, _, _, c): body): (i32, i32) =
-  if c == bg then (-1, c) else (i32.f32 x * w + i32.f32 y, c)
+  if c == bg
+  then (-1, c)
+  else (i32.f32 (f32.round x) * w + i32.f32 (f32.round y), c)
 
 type state [h][w] = { image: [h][w]i32
                     , bodies: []body
@@ -91,11 +93,11 @@ type state [h][w] = { image: [h][w]i32
                     , reverting: bool
                     , background: argb.colour }
 
-entry load_image [h][w] (image: [w][h][3]u8) (background: [3]u8): state [h][w] =
+entry load_image [h][w] (image: [h][w][3]u8) (background: [3]u8): state [h][w] =
  let pack (pix: [3]u8) = (i32.u8 pix[0] << 16) |
                          (i32.u8 pix[1] << 8) |
                          (i32.u8 pix[2] << 0)
- in { image = transpose (map (\row -> map pack row) image)
+ in { image = map (\row -> map pack row) image
     , bodies = []
     , orig_bodies = []
     , offset = 0
@@ -132,24 +134,23 @@ entry start_nbody_prefiltered [h][w] (state: state [h][w]) (is: []i32): state [h
        reverting = false,
        background = state.background }
 
-let chunk_size = 10000
-let num_attractors [n] (_bodies: [n]body) = n / chunk_size
+let num_attractors (n: i32) = i32.max 64 (t32 (8000 / r32 (i32.max 1 n)))
 
 entry revert [h][w] (state: state [h][w]): state [h][w] =
   let {image, bodies, offset, orig_bodies, reverting, background} = state
   in { image, bodies, offset, orig_bodies, reverting = !reverting, background }
 
 entry advance [h][w] ({image, bodies, offset, orig_bodies, reverting, background}: state [h][w]): state [h][w] =
-  let chunk_size = i32.min (num_attractors bodies) (length bodies - offset)
+  let chunk_size = i32.min (num_attractors (length bodies)) (length bodies - offset)
   let attractors = bodies[offset:offset+chunk_size]
   let bodies' = if reverting
-                then revert_bodies (r32 w) (r32 h) 100f32 2f32 bodies orig_bodies
-                else advance_bodies (r32 w) (r32 h) 50f32 1f32 bodies attractors
+                then revert_bodies (r32 w) (r32 h) 50f32 0.2f32 bodies orig_bodies
+                else advance_bodies (r32 w) (r32 h) 50f32 0.1f32 bodies attractors
   in { image,
        orig_bodies,
        reverting,
        bodies = bodies',
        offset = if length bodies > 0
-                then (offset + num_attractors bodies) % length bodies
+                then (offset + num_attractors (length bodies)) % length bodies
                 else 0,
        background }
