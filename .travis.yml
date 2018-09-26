@@ -17,7 +17,7 @@ install:
   - futhark-pkg sync
 
 script:
-  - futhark-test --no-terminal lib
+  - make
   - futhark-pkg upgrade
   - futhark-pkg sync
-  - futhark-test --no-terminal lib
+  - make
