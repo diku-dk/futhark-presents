@@ -1,6 +1,6 @@
 all: viewer.py
 
-viewer.py: viewer.fut
+viewer.py: *.fut
 	futhark-pyopencl --library viewer.fut
 
 run: viewer.py

@@ -55,7 +55,8 @@ def render(state):
 
 def new_state():
     return { 'slide_index': 0,
-             'viewer_state': viewer.load_image(slides[0], compute_background(slides[0])) }
+             'viewer_state': viewer.load_image(slides[0], compute_background(slides[0])),
+             'sand': False }
 
 desired_fps = 60.0
 
@@ -63,6 +64,7 @@ def change_slide(d, state):
     i = min(len(slides)-1, max(state['slide_index'] + d, 0))
     state['slide_index'] = i
     state['viewer_state'] = viewer.load_image(slides[i], compute_background(slides[i]))
+    state['sand'] = False
 
 def start_nbody(state):
     # To work around a bug in either Futhark or Beignet, we perform
@@ -77,13 +79,20 @@ def start_nbody(state):
 def shuffle(state):
     state['viewer_state'] = viewer.shuffle(state['viewer_state'], np.random.rand())
 
+def drop(i, state):
+    state['viewer_state'] = viewer.drop_pixels(i, state['viewer_state'])
+
 state = new_state()
 
 running=True
 last=time.time()
 desired_fps=60
+i = 0
 while running:
     advance(state)
+    if state['sand']:
+        i += 1
+        drop(i, state)
     if ((time.time()-last) > (1.0/desired_fps)):
         render(state)
         last=time.time()
@@ -107,6 +116,8 @@ while running:
                 start_nbody(state)
             elif key == SDLK_r:
                 shuffle(state)
+            elif key == SDLK_d:
+                state['sand']=True
             elif key == SDLK_q:
                 sys.exit()
             elif key == SDLK_f:
