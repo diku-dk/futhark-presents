@@ -50,7 +50,7 @@ let advance_bodies [n] (maxx: f32) (maxy: f32) (epsilon: f32) (time_step: f32) (
 
 let calc_revert_accels [n] (epsilon: f32) (bodies: []body) (orig_bodies: [n]body): []acceleration =
   let weighten ((pos, _mass, vel, c): body) =
-        (pos, 6000f32, vel, c)
+        (pos, 3000f32, vel, c)
   let move (body: body) (orig_body: body) =
         (accel epsilon body (weighten orig_body))
   in map2 move bodies orig_bodies
@@ -59,13 +59,7 @@ let revert_bodies [n] (maxx: f32) (maxy: f32) (epsilon: f32) (time_step: f32) (b
   let accels = calc_revert_accels epsilon bodies orig_bodies
   let friction ((pos, mass, vel, c): body) (_orig_body: body) =
         (pos, mass, vec2.scale 0.9f32 vel, c)
-  let maybe_jump (body: body) (orig_body: body) =
-        if dist body orig_body < 1f32
-        then (orig_body.1, body.2, body.3, body.4)
-        else body
-  in map2 maybe_jump
-          (map2 (advance_body maxx maxy time_step) (map2 friction bodies orig_bodies) accels)
-          orig_bodies
+  in map2 (advance_body maxx maxy time_step) (map2 friction bodies orig_bodies) accels
 
 let only_foreground (bg: argb.colour) (bodies: []body) =
   let not_bg ((_, _, _, col): body) = col != bg
@@ -144,8 +138,8 @@ entry advance [h][w] ({image, bodies, offset, orig_bodies, reverting, background
   let chunk_size = i32.min (num_attractors (length bodies)) (length bodies - offset)
   let attractors = bodies[offset:offset+chunk_size]
   let bodies' = if reverting
-                then revert_bodies (r32 w) (r32 h) 50f32 0.2f32 bodies orig_bodies
-                else advance_bodies (r32 w) (r32 h) 50f32 0.1f32 bodies attractors
+                then revert_bodies (r32 w) (r32 h) 50 0.2 bodies orig_bodies
+                else advance_bodies (r32 w) (r32 h) 50 0.1 bodies attractors
   in { image,
        orig_bodies,
        reverting,
