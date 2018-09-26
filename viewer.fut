@@ -25,9 +25,9 @@ let accel (epsilon: f32) ((pi, _, _, _):body) ((pj, mj, _, _): body)
   let s = mj * invr3
   in vec2.scale s r
 
-let bound_pos (maxx: f32) (maxy: f32) (({x,y}, mass, {x=dx,y=dy}, c): body): body =
-  let x' = f32.min (f32.max 0f32 x) maxy
-  let y' = f32.min (f32.max 0f32 y) maxx
+let bound_pos (maxy: f32) (maxx: f32) (({x,y}, mass, {x=dx,y=dy}, c): body): body =
+  let x' = f32.min (f32.max 0f32 x) maxx
+  let y' = f32.min (f32.max 0f32 y) maxy
   let dx' = if x != x' then -dx else dx
   let dy' = if y != y' then -dy else dy
   in ({x=x',y=y'}, mass, {x=dx',y=dy'}, c)
@@ -38,15 +38,15 @@ let calc_accels [n] (epsilon: f32) (bodies: [n]body) (attractors: []body): [n]ac
         in (reduce_comm (vec2.+) {x=0f32, y=0f32} accels)
   in map move bodies
 
-let advance_body (maxx: f32) (maxy: f32) (time_step: f32) ((pos, mass, vel, c):body) (acc:acceleration): body =
+let advance_body (maxy: f32) (maxx: f32) (time_step: f32) ((pos, mass, vel, c):body) (acc:acceleration): body =
   let acc' = vec2.scale mass acc
   let pos' = pos vec2.+ vec2.scale time_step vel
   let vel' = vel vec2.+ vec2.scale time_step acc'
-  in bound_pos maxx maxy (pos', mass, vel', c)
+  in bound_pos maxy maxx (pos', mass, vel', c)
 
-let advance_bodies [n] (maxx: f32) (maxy: f32) (epsilon: f32) (time_step: f32) (bodies: [n]body) (attractors: []body): [n]body =
+let advance_bodies [n] (maxy: f32) (maxx: f32) (epsilon: f32) (time_step: f32) (bodies: [n]body) (attractors: []body): [n]body =
   let accels = calc_accels epsilon bodies attractors
-  in map2 (advance_body maxx maxy time_step) bodies accels
+  in map2 (advance_body maxy maxx time_step) bodies accels
 
 let calc_revert_accels [n] (epsilon: f32) (bodies: []body) (orig_bodies: [n]body): []acceleration =
   let weighten ((pos, _mass, vel, c): body) =
@@ -55,11 +55,11 @@ let calc_revert_accels [n] (epsilon: f32) (bodies: []body) (orig_bodies: [n]body
         (accel epsilon body (weighten orig_body))
   in map2 move bodies orig_bodies
 
-let revert_bodies [n] (maxx: f32) (maxy: f32) (epsilon: f32) (time_step: f32) (bodies: [n]body) (orig_bodies: [n]body): [n]body =
+let revert_bodies [n] (maxy: f32) (maxx: f32) (epsilon: f32) (time_step: f32) (bodies: [n]body) (orig_bodies: [n]body): [n]body =
   let accels = calc_revert_accels epsilon bodies orig_bodies
   let friction ((pos, mass, vel, c): body) (_orig_body: body) =
         (pos, mass, vec2.scale 0.9f32 vel, c)
-  in map2 (advance_body maxx maxy time_step) (map2 friction bodies orig_bodies) accels
+  in map2 (advance_body maxy maxx time_step) (map2 friction bodies orig_bodies) accels
 
 let only_foreground (bg: argb.colour) (bodies: []body) =
   let not_bg ((_, _, _, col): body) = col != bg
@@ -148,3 +148,16 @@ entry advance [h][w] ({image, bodies, offset, orig_bodies, reverting, background
                 then (offset + num_attractors (length bodies)) % length bodies
                 else 0,
        background }
+
+import "lib/github.com/diku-dk/cpprandom/random"
+module engine = minstd_rand
+module distribution = uniform_real_distribution f32 engine
+
+entry shuffle [h][w] ({image, bodies, offset, orig_bodies, reverting, background}: state [h][w]) (seed: f32): state [h][w] =
+  let rng = engine.rng_from_seed [i32.u32 (f32.to_bits seed)]
+  let move (rng: engine.rng) ((_, mass, velocity, colour) : body) =
+    let (rng, x) = distribution.rand (0, r32 h) rng
+    let (_, y) = distribution.rand (0, r32 w) rng
+    in ({x, y}, mass, velocity, colour)
+  let bodies = map2 move (engine.split_rng (length bodies) rng) bodies
+  in {image, bodies, offset, orig_bodies, reverting, background}

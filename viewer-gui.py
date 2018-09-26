@@ -74,6 +74,9 @@ def start_nbody(state):
     bodies = bodies[keep]
     state['viewer_state'] = viewer.start_nbody_prefiltered(state['viewer_state'], bodies)
 
+def shuffle(state):
+    state['viewer_state'] = viewer.shuffle(state['viewer_state'], np.random.rand())
+
 state = new_state()
 
 running=True
@@ -102,6 +105,8 @@ while running:
                 change_slide(len(slides), state)
             elif key == SDLK_p:
                 start_nbody(state)
+            elif key == SDLK_r:
+                shuffle(state)
             elif key == SDLK_q:
                 sys.exit()
             elif key == SDLK_f:
