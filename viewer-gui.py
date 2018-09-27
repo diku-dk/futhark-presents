@@ -62,14 +62,7 @@ def change_slide(d, state):
     state['sand'] = False
 
 def start_nbody(state):
-    # To work around a bug in either Futhark or Beignet, we perform
-    # the filtering of white pixels on the CPU.  This is not necessary
-    # on NVIDIA GPUs.
-    bodies, keep = viewer.bodies_and_flags(state['viewer_state'])
-    bodies = bodies.get()
-    keep = keep.get()
-    bodies = bodies[keep]
-    state['viewer_state'] = viewer.start_nbody_prefiltered(state['viewer_state'], bodies)
+    state['viewer_state'] = viewer.start_nbody(state['viewer_state'])
 
 def shuffle(state):
     state['viewer_state'] = viewer.shuffle(state['viewer_state'], np.random.rand())
