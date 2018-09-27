@@ -12,23 +12,23 @@ import png
 import ctypes as ct
 
 def load_slide(f):
-    return np.array(imageio.imread(f))[:768,:1024]
-
-def compute_background(img):
-    colors = np.ndarray((img.shape[0], img.shape[1]), dtype=np.uint32)
+    img = np.array(imageio.imread(f))[:768,:1024]
+    colors = np.ndarray((img.shape[0], img.shape[1]), dtype=np.int32)
     colors[:,:]  = np.uint32(img[:,:,0]) << 16
     colors[:,:] += np.uint32(img[:,:,1]) << 8
     colors[:,:] += np.uint32(img[:,:,2]) << 0
+    return colors
+
+def compute_background(colors):
     (values,counts) = np.unique(colors,return_counts=True)
     pix = values[np.argmax(counts)]
-    bg = np.array([(pix>>16)&0xFF, (pix>>8)&0xFF, (pix>>0)&0xFF], dtype=np.uint8)
-    return bg
+    return pix
 
 slides = [ load_slide(f) for f in sys.argv[1:] ]
 
 viewer = viewer(interactive=1)
 
-(height, width, _) = slides[0].shape
+(height, width) = slides[0].shape
 SDL_Init(SDL_INIT_EVERYTHING)
 window = SDL_CreateWindow("Futhark Presents!",
                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -117,6 +117,8 @@ while running:
             elif key == SDLK_r:
                 shuffle(state)
             elif key == SDLK_d:
+                slide =viewer.render(state['viewer_state']).get()
+                state['viewer_state'] = viewer.load_image(slide, compute_background(slide))
                 state['sand']=True
             elif key == SDLK_q:
                 sys.exit()

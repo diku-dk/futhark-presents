@@ -9,17 +9,14 @@ type state [h][w] = { image: [h][w]argb.colour
                     , reverting: bool
                     , background: argb.colour }
 
-entry load_image [h][w] (image: [h][w][3]u8) (background: [3]u8): state [h][w] =
- let pack (pix: [3]u8) = (i32.u8 pix[0] << 16) |
-                         (i32.u8 pix[1] << 8) |
-                         (i32.u8 pix[2] << 0)
- in { image = map (\row -> map pack row) image
-    , bodies = []
-    , orig_bodies = []
-    , offset = 0
-    , reverting = false
-    , background = pack background
-    }
+entry load_image [h][w] (image: [h][w]argb.colour) (background: argb.colour): state [h][w] =
+ { image = image
+ , bodies = []
+ , orig_bodies = []
+ , offset = 0
+ , reverting = false
+ , background = background
+ }
 
 entry render [h][w] (state: state [h][w]): [h][w]i32 =
  if length state.bodies == 0
