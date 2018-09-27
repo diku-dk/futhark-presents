@@ -19,11 +19,6 @@ def load_slide(f):
     colors[:,:] += np.uint32(img[:,:,2]) << 0
     return colors
 
-def compute_background(colors):
-    (values,counts) = np.unique(colors,return_counts=True)
-    pix = values[np.argmax(counts)]
-    return pix
-
 slides = [ load_slide(f) for f in sys.argv[1:] ]
 
 viewer = viewer(interactive=1)
@@ -55,7 +50,7 @@ def render(state):
 
 def new_state():
     return { 'slide_index': 0,
-             'viewer_state': viewer.load_image(slides[0], compute_background(slides[0])),
+             'viewer_state': viewer.load_image(slides[0]),
              'sand': False }
 
 desired_fps = 60.0
@@ -63,7 +58,7 @@ desired_fps = 60.0
 def change_slide(d, state):
     i = min(len(slides)-1, max(state['slide_index'] + d, 0))
     state['slide_index'] = i
-    state['viewer_state'] = viewer.load_image(slides[i], compute_background(slides[i]))
+    state['viewer_state'] = viewer.load_image(slides[i])
     state['sand'] = False
 
 def start_nbody(state):
@@ -117,8 +112,8 @@ while running:
             elif key == SDLK_r:
                 shuffle(state)
             elif key == SDLK_d:
-                slide =viewer.render(state['viewer_state']).get()
-                state['viewer_state'] = viewer.load_image(slide, compute_background(slide))
+                slide = viewer.render(state['viewer_state']).get()
+                state['viewer_state'] = viewer.load_image(slide)
                 state['sand']=True
             elif key == SDLK_q:
                 sys.exit()

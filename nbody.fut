@@ -75,7 +75,5 @@ let bodies_from_pixels [h][w] (image: [h][w]i32): []body =
 let bodies_from_image [h][w] (bg: argb.colour) (image: [h][w]i32): []body =
   only_foreground bg (bodies_from_pixels image)
 
-let render_body (bg: argb.colour) (_h: i32) (w: i32) (({x,y}, _, _, c): body): (i32, i32) =
-  if c == bg
-  then (-1, c)
-  else (i32.f32 (f32.round x) * w + i32.f32 (f32.round y), c)
+let render_body (_h: i32) (w: i32) (({x,y}, _, _, c): body): (i32, i32) =
+  (i32.f32 (f32.round x) * w + i32.f32 (f32.round y), c)
