@@ -45,9 +45,8 @@ entry start_nbody [h][w] (s: state [h][w]): state [h][w] =
 
 let num_attractors (n: i32) = i32.max 64 (t32 (8000 / r32 (i32.max 1 n)))
 
-entry revert [h][w] (state: state [h][w]): state [h][w] =
-  let {image, bodies, offset, orig_bodies, reverting, background} = state
-  in { image, bodies, offset, orig_bodies, reverting = !reverting, background }
+entry revert [h][w] (s: state [h][w]): state [h][w] =
+  s with reverting <- !s.reverting
 
 entry advance [h][w] (s: state [h][w]): state [h][w] =
   let chunk_size = i32.min (num_attractors (length s.bodies)) (length s.bodies - s.offset)
