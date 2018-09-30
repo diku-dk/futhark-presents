@@ -22,11 +22,11 @@ entry load_image [h][w] (image: [h][w]argb.colour): state [h][w] =
  , background = argb.black -- dummy
  }
 
-entry render [h][w] (state: state [h][w]): [h][w]i32 =
- if length state.bodies == 0
- then state.image
- else let (is, vs) = unzip (map (render_body h w) state.bodies)
-      in unflatten h w (scatter (replicate (w*h) state.background) is vs)
+entry render [h][w] (s: state [h][w]): [h][w]i32 =
+ if length s.bodies == 0
+ then s.image
+ else let (is, vs) = unzip (map (render_body h w) s.bodies)
+      in unflatten h w (scatter (replicate (w*h) s.background) is vs)
 
 let most_common_colour [h][w] (image: [h][w]argb.colour) =
  image |> flatten
@@ -35,15 +35,13 @@ let most_common_colour [h][w] (image: [h][w]argb.colour) =
        |> f32.to_bits
        |> i32.u32
 
-entry start_nbody [h][w] (state: state [h][w]): state [h][w] =
-  let background = most_common_colour state.image
-  let bodies = bodies_from_image background state.image
-  in { image = state.image,
-       bodies = bodies,
-       orig_bodies = bodies,
-       offset = length bodies / 2,
-       reverting = false,
-       background }
+entry start_nbody [h][w] (s: state [h][w]): state [h][w] =
+  let background = most_common_colour s.image
+  let bodies = bodies_from_image background s.image
+  in s with bodies <- bodies
+       with background <- background
+       with offset <- length s.bodies / 2
+       with reverting <- false
 
 let num_attractors (n: i32) = i32.max 64 (t32 (8000 / r32 (i32.max 1 n)))
 
@@ -51,33 +49,27 @@ entry revert [h][w] (state: state [h][w]): state [h][w] =
   let {image, bodies, offset, orig_bodies, reverting, background} = state
   in { image, bodies, offset, orig_bodies, reverting = !reverting, background }
 
-entry advance [h][w] ({image, bodies, offset, orig_bodies, reverting, background}: state [h][w]): state [h][w] =
-  let chunk_size = i32.min (num_attractors (length bodies)) (length bodies - offset)
-  let attractors = bodies[offset:offset+chunk_size]
-  let bodies' = if reverting
-                then revert_bodies (r32 w) (r32 h) 50 0.2 bodies orig_bodies
-                else advance_bodies (r32 w) (r32 h) 50 0.1 bodies attractors
-  in { image,
-       orig_bodies,
-       reverting,
-       bodies = bodies',
-       offset = if length bodies > 0
-                then (offset + num_attractors (length bodies)) % length bodies
-                else 0,
-       background }
+entry advance [h][w] (s: state [h][w]): state [h][w] =
+  let chunk_size = i32.min (num_attractors (length s.bodies)) (length s.bodies - s.offset)
+  let attractors = s.bodies[s.offset:s.offset+chunk_size]
+  in s with bodies <- (if s.reverting
+                       then revert_bodies (r32 w) (r32 h) 50 0.2 s.bodies s.orig_bodies
+                       else advance_bodies (r32 w) (r32 h) 50 0.1 s.bodies attractors)
+       with offset <- if length s.bodies > 0
+                      then (s.offset + num_attractors (length s.bodies)) % length s.bodies
+                      else 0
 
 import "lib/github.com/diku-dk/cpprandom/random"
 module engine = minstd_rand
 module distribution = uniform_real_distribution f32 engine
 
-entry shuffle [h][w] ({image, bodies, offset, orig_bodies, reverting, background}: state [h][w]) (seed: f32): state [h][w] =
+entry shuffle [h][w] (s: state [h][w]) (seed: f32): state [h][w] =
   let rng = engine.rng_from_seed [i32.u32 (f32.to_bits seed)]
   let move (rng: engine.rng) ((_, mass, velocity, colour) : body) =
     let (rng, x) = distribution.rand (0, r32 h) rng
     let (_, y) = distribution.rand (0, r32 w) rng
     in ({x, y}, mass, velocity, colour)
-  let bodies = map2 move (engine.split_rng (length bodies) rng) bodies
-  in {image, bodies, offset, orig_bodies, reverting, background}
+  in s with bodies <- map2 move (engine.split_rng (length s.bodies) rng) s.bodies
 
-entry drop_pixels [h][w] (i: i32) ({image, bodies, offset, orig_bodies, reverting, background}: state [h][w]): state [h][w] =
-  {image = drop_pixels i image, bodies, offset, orig_bodies, reverting, background}
+entry drop_pixels [h][w] (i: i32) (s: state [h][w]): state [h][w] =
+  s with image <- drop_pixels i s.image
