@@ -38,25 +38,25 @@ let most_common_colour [h][w] (image: [h][w]argb.colour) =
 entry start_nbody [h][w] (s: state [h][w]): state [h][w] =
   let background = most_common_colour s.image
   let bodies = bodies_from_image background s.image
-  in s with bodies <- bodies
-       with background <- background
-       with offset <- length s.bodies / 2
-       with reverting <- false
+  in s with bodies = bodies
+       with background = background
+       with offset = length s.bodies / 2
+       with reverting = false
 
 let num_attractors (n: i32) = i32.max 64 (t32 (8000 / r32 (i32.max 1 n)))
 
 entry revert [h][w] (s: state [h][w]): state [h][w] =
-  s with reverting <- !s.reverting
+  s with reverting = !s.reverting
 
 entry advance [h][w] (s: state [h][w]): state [h][w] =
   let chunk_size = i32.min (num_attractors (length s.bodies)) (length s.bodies - s.offset)
   let attractors = s.bodies[s.offset:s.offset+chunk_size]
-  in s with bodies <- (if s.reverting
-                       then revert_bodies (r32 w) (r32 h) 50 0.2 s.bodies s.orig_bodies
-                       else advance_bodies (r32 w) (r32 h) 50 0.1 s.bodies attractors)
-       with offset <- if length s.bodies > 0
-                      then (s.offset + num_attractors (length s.bodies)) % length s.bodies
-                      else 0
+  in s with bodies = (if s.reverting
+                      then revert_bodies (r32 w) (r32 h) 50 0.2 s.bodies s.orig_bodies
+                      else advance_bodies (r32 w) (r32 h) 50 0.1 s.bodies attractors)
+       with offset = if length s.bodies > 0
+                     then (s.offset + num_attractors (length s.bodies)) % length s.bodies
+                     else 0
 
 import "lib/github.com/diku-dk/cpprandom/random"
 module engine = minstd_rand
@@ -68,7 +68,7 @@ entry shuffle [h][w] (s: state [h][w]) (seed: f32): state [h][w] =
     let (rng, x) = distribution.rand (0, r32 h) rng
     let (_, y) = distribution.rand (0, r32 w) rng
     in ({x, y}, mass, velocity, colour)
-  in s with bodies <- map2 move (engine.split_rng (length s.bodies) rng) s.bodies
+  in s with bodies = map2 move (engine.split_rng (length s.bodies) rng) s.bodies
 
 entry drop_pixels [h][w] (i: i32) (s: state [h][w]): state [h][w] =
-  s with image <- drop_pixels i s.image
+  s with image = drop_pixels i s.image
