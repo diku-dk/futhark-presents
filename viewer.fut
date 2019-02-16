@@ -39,6 +39,7 @@ entry start_nbody [h][w] (s: state [h][w]): state [h][w] =
   let background = most_common_colour s.image
   let bodies = bodies_from_image background s.image
   in s with bodies = bodies
+       with orig_bodies = bodies
        with background = background
        with offset = length s.bodies / 2
        with reverting = false
