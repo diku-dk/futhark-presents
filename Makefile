@@ -8,3 +8,6 @@ run: viewer.py
 
 lib: futhark.pkg
 	futhark pkg sync
+
+clean:
+	rm -f *.pyc viewer.py
