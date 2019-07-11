@@ -10,4 +10,5 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
+rm -f imgs/*
 pdftoppm -scale-to-x $width -scale-to-y $height -png "$1" imgs/

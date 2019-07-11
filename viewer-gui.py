@@ -41,7 +41,7 @@ def reWindow(window):
 def advance(state):
     state['viewer_state'] = viewer.advance(state['viewer_state'])
 
-def render(state):
+def render(window, state):
     frame_fut = viewer.render(state['viewer_state'])
     frame_fut.get(ary=frame_py)
 
@@ -82,7 +82,7 @@ while running:
         i += 1
         drop(i, state)
     if ((time.time()-last) > (1.0/desired_fps)):
-        render(state)
+        render(window, state)
         last=time.time()
     events = sdl2.ext.get_events()
     for event in events:
@@ -111,10 +111,10 @@ while running:
             elif key == SDLK_q:
                 sys.exit()
             elif key == SDLK_f:
-                SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN)
+                SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP)
                 (window_surface, frame_py, surface) = reWindow(window)
-
             elif key == SDLK_g:
                 SDL_SetWindowFullscreen(window, 0)
+                (window_surface, frame_py, surface) = reWindow(window)
             elif key == SDLK_o:
                 state['viewer_state'] = viewer.revert(state['viewer_state'])
