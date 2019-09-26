@@ -58,7 +58,7 @@ let calc_revert_accels [n] (epsilon: f32) (bodies: []body) (orig_bodies: [n]body
 let revert_bodies [n] (maxy: f32) (maxx: f32) (epsilon: f32) (time_step: f32) (bodies: [n]body) (orig_bodies: [n]body): [n]body =
   let accels = calc_revert_accels epsilon bodies orig_bodies
   let friction ((pos, mass, vel, c): body) (_orig_body: body) =
-        (pos, mass, vec2.scale 0.9f32 vel, c)
+        (pos, mass, vec2.scale 0.99f32 vel, c)
   in map2 (advance_body maxy maxx time_step) (map2 friction bodies orig_bodies) accels
 
 let only_foreground (bg: argb.colour) (bodies: []body) =
