@@ -13,9 +13,6 @@ let mass_from_colour (c: argb.colour): f32 =
   let (r,g,b,_) = argb.to_rgba c
   in f32.max 0.3 (3 - (r + g + b))
 
-let dist (x: body) (y: body) =
-  vec2.dot (x.1 vec2.- y.1) (x.1 vec2.- y.1)
-
 let accel (epsilon: f32) ((pi, _, _, _):body) ((pj, mj, _, _): body)
         : velocity =
   let r = pj vec2.- pi
