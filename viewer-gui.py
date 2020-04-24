@@ -12,7 +12,7 @@ import png
 import ctypes as ct
 
 def load_slide(f):
-    img = np.array(imageio.imread(f))[:768,:1024]
+    img = np.array(imageio.imread(f))
     colors = np.ndarray((img.shape[0], img.shape[1]), dtype=np.int32)
     colors[:,:]  = np.uint32(img[:,:,0]) << 16
     colors[:,:] += np.uint32(img[:,:,1]) << 8
@@ -25,7 +25,7 @@ viewer = viewer(interactive=1)
 
 (height, width) = slides[0].shape
 SDL_Init(SDL_INIT_EVERYTHING)
-window = SDL_CreateWindow("Futhark Presents!",
+window = SDL_CreateWindow(b"Futhark Presents!",
                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		          width, height, SDL_WINDOW_SHOWN)
 

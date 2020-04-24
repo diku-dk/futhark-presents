@@ -60,4 +60,5 @@ let gravity (h: hood): hood =
 
 let drop_pixels [h][w] (i: i32) (pixels: [h][w]argb.colour): [h][w]argb.colour =
   let offset = (i % 2) - 1
-  in mk_hoods offset pixels |> map (map gravity) |> un_hoods offset
+  let hoods = mk_hoods offset pixels
+  in (hoods |> map (map gravity) |> un_hoods offset) :> [h][w]argb.colour

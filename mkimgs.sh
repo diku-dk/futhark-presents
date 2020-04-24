@@ -2,8 +2,8 @@
 
 set -e
 
-width=1024
-height=768
+width=1280
+height=960
 
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <pdf>" >&2
