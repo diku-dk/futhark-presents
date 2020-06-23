@@ -22,7 +22,7 @@ entry load_image [h][w] (image: [h][w]argb.colour): state [h][w][0] =
  , background = argb.black -- dummy
  }
 
-entry render [h][w][n] (s: state [h][w][n]): [h][w]i32 =
+entry render [h][w][n] (s: state [h][w][n]): [h][w]argb.colour =
  if length s.bodies == 0
  then s.image
  else let (is, vs) = unzip (map (render_body h w) s.bodies)
@@ -30,10 +30,9 @@ entry render [h][w][n] (s: state [h][w][n]): [h][w]i32 =
 
 let most_common_colour [h][w] (image: [h][w]argb.colour) =
  image |> flatten
-       |> map (u32.i32 >-> f32.from_bits)
+       |> map f32.from_bits
        |> merge_sort (<=) |> statistics.mode_sorted
        |> f32.to_bits
-       |> i32.u32
 
 entry start_nbody [h][w] (s: state [h][w][]): state [h][w][] =
   let background = most_common_colour s.image

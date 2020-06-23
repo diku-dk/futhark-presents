@@ -23,7 +23,7 @@ let index_to_hood (offset: i32) (i: i32): (i32, i32) =
 
 let mk_hoods [h][w] (offset: i32) (pixels: [h][w]argb.colour): [][]hood =
   let get (i, j) = if i >= 0 && i < h && j >= 0 && j < w
-                   then unsafe pixels[i,j] else oob
+                   then #[unsafe] pixels[i,j] else oob
   in tabulate_2d (h/2-offset) (w/2-offset)
      (\i j -> hood_from_quadrants (get (i*2+offset,j*2+offset)) (get (i*2+offset,j*2+1+offset))
                                   (get (i*2+1+offset,j*2+offset)) (get (i*2+1+offset, j*2+1+offset)))
@@ -34,7 +34,7 @@ let world_index [h][w] (offset: i32) (elems: [h][w]hood) ((i,j): (i32,i32)): ele
 
   in if hi < 0 || hi >= h || hj < 0 || hj >= w
      then oob
-     else hood_quadrant (unsafe elems[hi,hj]) (ii*2+ij)
+     else hood_quadrant (#[unsafe] elems[hi,hj]) (ii*2+ij)
 
 let un_hoods [h][w] (offset: i32) (hoods: [h][w]hood): [][]argb.colour =
   let particle_pixel (i: i32) (j: i32) =
@@ -60,5 +60,4 @@ let gravity (h: hood): hood =
 
 let drop_pixels [h][w] (i: i32) (pixels: [h][w]argb.colour): [h][w]argb.colour =
   let offset = (i % 2) - 1
-  let hoods = mk_hoods offset pixels
-  in (hoods |> map (map gravity) |> un_hoods offset) :> [h][w]argb.colour
+  in (mk_hoods offset pixels |> map (map gravity) |> un_hoods offset) :> [h][w]argb.colour

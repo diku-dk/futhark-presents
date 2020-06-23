@@ -13,7 +13,7 @@ import ctypes as ct
 
 def load_slide(f):
     img = np.array(imageio.imread(f))
-    colors = np.ndarray((img.shape[0], img.shape[1]), dtype=np.int32)
+    colors = np.ndarray((img.shape[0], img.shape[1]), dtype=np.uint32)
     colors[:,:]  = np.uint32(img[:,:,0]) << 16
     colors[:,:] += np.uint32(img[:,:,1]) << 8
     colors[:,:] += np.uint32(img[:,:,2]) << 0
@@ -31,7 +31,7 @@ window = SDL_CreateWindow(b"Futhark Presents!",
 
 def reWindow(window):
     window_surface = SDL_GetWindowSurface(window)
-    frame_py = np.ndarray(shape=(height, width), dtype=np.int32, order='C')
+    frame_py = np.ndarray(shape=(height, width), dtype=np.uint32, order='C')
     surface = SDL_CreateRGBSurfaceFrom(frame_py.ctypes.data, width, height, 32, width*4,
                                        0xFF0000, 0xFF00, 0xFF, 0x00000000)
     return (window_surface, frame_py, surface)
