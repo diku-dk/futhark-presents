@@ -1,6 +1,6 @@
 import "lib/github.com/athas/matte/colour"
 
-type marg_pos = i32
+type marg_pos = i64
 type element = argb.colour
 let oob: element = 0x12345678
 type hood = (element,element,element,element)
@@ -17,18 +17,18 @@ let hood_quadrant (h: hood) (i: marg_pos): element =
   else if i == 2 then dl0
   else                dr0
 
-let index_to_hood (offset: i32) (i: i32): (i32, i32) =
+let index_to_hood (offset: i64) (i: i64): (i64, i64) =
   if offset == 0 then (i / 2, i % 2)
   else ((i+1) / 2, (i+1) % 2)
 
-let mk_hoods [h][w] (offset: i32) (pixels: [h][w]argb.colour): [][]hood =
+let mk_hoods [h][w] (offset: i64) (pixels: [h][w]argb.colour): [][]hood =
   let get (i, j) = if i >= 0 && i < h && j >= 0 && j < w
                    then #[unsafe] pixels[i,j] else oob
   in tabulate_2d (h/2-offset) (w/2-offset)
      (\i j -> hood_from_quadrants (get (i*2+offset,j*2+offset)) (get (i*2+offset,j*2+1+offset))
                                   (get (i*2+1+offset,j*2+offset)) (get (i*2+1+offset, j*2+1+offset)))
 
-let world_index [h][w] (offset: i32) (elems: [h][w]hood) ((i,j): (i32,i32)): element =
+let world_index [h][w] (offset: i64) (elems: [h][w]hood) ((i,j): (i64,i64)): element =
   let (hi,ii) = index_to_hood offset i
   let (hj,ij) = index_to_hood offset j
 
@@ -36,8 +36,8 @@ let world_index [h][w] (offset: i32) (elems: [h][w]hood) ((i,j): (i32,i32)): ele
      then oob
      else hood_quadrant (#[unsafe] elems[hi,hj]) (ii*2+ij)
 
-let un_hoods [h][w] (offset: i32) (hoods: [h][w]hood): [][]argb.colour =
-  let particle_pixel (i: i32) (j: i32) =
+let un_hoods [h][w] (offset: i64) (hoods: [h][w]hood): [][]argb.colour =
+  let particle_pixel i j =
     world_index offset hoods (i,j)
   in tabulate_2d ((h+offset)*2) ((w+offset)*2) particle_pixel
 
@@ -59,5 +59,5 @@ let gravity (h: hood): hood =
   in hood_from_quadrants ul ur dl dr
 
 let drop_pixels [h][w] (i: i32) (pixels: [h][w]argb.colour): [h][w]argb.colour =
-  let offset = (i % 2) - 1
+  let offset = (i64.i32 i % 2) - 1
   in (mk_hoods offset pixels |> map (map gravity) |> un_hoods offset) :> [h][w]argb.colour

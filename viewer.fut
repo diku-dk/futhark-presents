@@ -7,7 +7,7 @@ import "sand"
 type~ state [h][w][n] = { image: [h][w]argb.colour
                         , bodies: [n]body
                         , orig_bodies: [n]body
-                        , offset: i32
+                        , offset: i64
                         , reverting: bool
                         , background: argb.colour }
 
@@ -43,17 +43,17 @@ entry start_nbody [h][w] (s: state [h][w][]): state [h][w][] =
        with offset = length s.bodies / 2
        with reverting = false
 
-let num_attractors (n: i32) = i32.max 64 (t32 (8000 / r32 (i32.max 1 n)))
+let num_attractors (n: i64) = i64.max 64 (i64.f32 (8000 / f32.i64 (i64.max 1 n)))
 
 entry revert [h][w][n] (s: state [h][w][n]): state [h][w][n] =
   s with reverting = !s.reverting
 
 entry advance [h][w][n] (s: state [h][w][n]): state [h][w][n] =
-  let chunk_size = i32.min (num_attractors (length s.bodies)) (length s.bodies - s.offset)
+  let chunk_size = i64.min (num_attractors (length s.bodies)) (length s.bodies - s.offset)
   let attractors = s.bodies[s.offset:s.offset+chunk_size]
   in s with bodies = (if s.reverting
-                      then revert_bodies (r32 w) (r32 h) 50 0.2 s.bodies s.orig_bodies
-                      else advance_bodies (r32 w) (r32 h) 50 0.1 s.bodies attractors)
+                      then revert_bodies (f32.i64 w) (f32.i64 h) 50 0.2 s.bodies s.orig_bodies
+                      else advance_bodies (f32.i64 w) (f32.i64 h) 50 0.1 s.bodies attractors)
        with offset = if length s.bodies > 0
                      then (s.offset + num_attractors (length s.bodies)) % length s.bodies
                      else 0
@@ -65,8 +65,8 @@ module distribution = uniform_real_distribution f32 engine
 entry shuffle [h][w][n] (s: state [h][w][n]) (seed: f32): state [h][w][n] =
   let rng = engine.rng_from_seed [i32.u32 (f32.to_bits seed)]
   let move (rng: engine.rng) ((_, mass, velocity, colour) : body) =
-    let (rng, x) = distribution.rand (0, r32 h) rng
-    let (_, y) = distribution.rand (0, r32 w) rng
+    let (rng, x) = distribution.rand (0, f32.i64 h) rng
+    let (_, y) = distribution.rand (0, f32.i64 w) rng
     in ({x, y}, mass, velocity, colour)
   in s with bodies = map2 move (engine.split_rng n rng) s.bodies
 

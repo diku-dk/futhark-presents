@@ -63,8 +63,8 @@ let only_foreground (bg: argb.colour) (bodies: []body) =
   in filter not_bg bodies
 
 let bodies_from_pixels [h][w] (image: [h][w]u32): []body =
-  let body_from_pixel (x: i32, y: i32) (pix: argb.colour) =
-        ({x=f32.i32 x, y=f32.i32 y}, mass_from_colour pix, {x=0, y=0}, pix)
+  let body_from_pixel (x: i64, y: i64) (pix: argb.colour) =
+        ({x=f32.i64 x, y=f32.i64 y}, mass_from_colour pix, {x=0, y=0}, pix)
   in flatten
      (map (\(row, x) -> map (\(pix, y) -> body_from_pixel (x,y) pix) (zip row (iota w)))
             (zip image (iota h)))
@@ -72,5 +72,5 @@ let bodies_from_pixels [h][w] (image: [h][w]u32): []body =
 let bodies_from_image [h][w] (bg: argb.colour) (image: [h][w]u32): []body =
   only_foreground bg (bodies_from_pixels image)
 
-let render_body (_h: i32) (w: i32) (({x,y}, _, _, c): body): (i32, u32) =
-  (t32 (f32.round x) * w + t32 (f32.round y), c)
+let render_body (_h: i64) (w: i64) (({x,y}, _, _, c): body): (i64, u32) =
+  (i64.f32 (f32.round x) * w + i64.f32 (f32.round y), c)
