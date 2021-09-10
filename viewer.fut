@@ -51,9 +51,11 @@ entry revert [h][w][n] (s: state [h][w][n]): state [h][w][n] =
 entry advance [h][w][n] (s: state [h][w][n]): state [h][w][n] =
   let chunk_size = i64.min (num_attractors (length s.bodies)) (length s.bodies - s.offset)
   let attractors = s.bodies[s.offset:s.offset+chunk_size]
+  let fwd_time_step = 0.1 * 5
+  let rev_time_step = 0.2
   in s with bodies = (if s.reverting
-                      then revert_bodies (f32.i64 w) (f32.i64 h) 50 0.2 s.bodies s.orig_bodies
-                      else advance_bodies (f32.i64 w) (f32.i64 h) 50 0.1 s.bodies attractors)
+                      then revert_bodies (f32.i64 w) (f32.i64 h) 50 rev_time_step s.bodies s.orig_bodies
+                      else advance_bodies (f32.i64 w) (f32.i64 h) 50 fwd_time_step s.bodies attractors)
        with offset = if length s.bodies > 0
                      then (s.offset + num_attractors (length s.bodies)) % length s.bodies
                      else 0
