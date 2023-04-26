@@ -26,7 +26,7 @@ entry render [h][w][n] (s: state [h][w][n]): [h][w]argb.colour =
  if length s.bodies == 0
  then s.image
  else let (is, vs) = unzip (map (render_body h w) s.bodies)
-      in unflatten h w (scatter (replicate (w*h) s.background) is vs)
+      in unflatten h w (scatter (replicate (h*w) s.background) is vs)
 
 let most_common_colour [h][w] (image: [h][w]argb.colour) =
  image |> flatten
