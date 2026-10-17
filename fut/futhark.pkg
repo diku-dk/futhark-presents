@@ -1,0 +1,8 @@
+package github.com/diku-dk/futhark-presents-2
+
+require {
+  github.com/athas/matte 0.1.3 #ec4243a5f64cb818a4289dbc4953460ea19da12c
+  github.com/athas/vector 0.7.2 #75004c2819b471d21a15d95e68a0236aa2dd1bdc
+  github.com/diku-dk/cpprandom 1.5.1 #04965fc1b4c0b5ee6fd182d86c09c87920dd57a4
+  github.com/diku-dk/sorts 0.7.3 #a473651d67d8ed0fafcea315f0226676721e2bdf
+}

@@ -1,0 +1,5 @@
+*.exe
+*~
+MLB
+libtigr.so
+out.png

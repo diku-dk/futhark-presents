@@ -1,0 +1,5 @@
+$(SML_LIB)/basis/basis.mlb
+lib/github.com/diku-dk/sml-tigr/tigr.mlb
+viewer.sig
+viewer.sml
+slides.sml

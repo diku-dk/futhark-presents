@@ -1,0 +1,5 @@
+package github.com/diku-dk/futhark-presents-2
+
+require {
+  github.com/diku-dk/sml-tigr 0.0.1 #147c20cbc2dafe9459d7b1cded1196dbc1147b17
+}

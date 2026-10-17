@@ -1,4 +1,13 @@
-imgs
-*.pyc
-viewer.py
-lib
+futhark-presents
+result
+MLB
+*.a
+*.so
+*.o
+fut/*.c
+fut/*.h
+fut/*.json
+sml/viewer.sml
+sml/viewer.sig
+sml/viewer.smlfut.c
+slides
