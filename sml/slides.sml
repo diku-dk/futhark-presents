@@ -24,13 +24,15 @@ fun loadSlides (pdf: string, dpi: int) : Tigr.tigr array =
        stays reserved.  MLKit before 4.7.23 only returns an unused name, so
        mkDir may still fail if the name was taken in the meantime; retry. *)
     fun mkTmpDir tries =
-      let val f = OS.FileSys.tmpName ()
-      in (OS.FileSys.mkDir (f ^ ".d"); f)
-         handle OS.SysErr _ =>
-           ( OS.FileSys.remove f handle OS.SysErr _ => ()
-           ; if tries > 0 then mkTmpDir (tries - 1)
-             else fail "Cannot create temporary directory"
-           )
+      let
+        val f = OS.FileSys.tmpName ()
+      in
+        (OS.FileSys.mkDir (f ^ ".d"); f)
+        handle OS.SysErr _ =>
+          ( OS.FileSys.remove f handle OS.SysErr _ => ()
+          ; if tries > 0 then mkTmpDir (tries - 1)
+            else fail "Cannot create temporary directory"
+          )
       end
     val tmpFile = mkTmpDir 10
     val dir = tmpFile ^ ".d"
@@ -49,7 +51,8 @@ fun loadSlides (pdf: string, dpi: int) : Tigr.tigr array =
         loop ();
         OS.FileSys.closeDir stream;
         OS.FileSys.rmDir dir;
-        OS.FileSys.remove tmpFile handle OS.SysErr _ => ()
+        OS.FileSys.remove tmpFile
+        handle OS.SysErr _ => ()
       end
     val () = print ("Converting " ^ pdf ^ " to images...\n")
     val cmd =
@@ -223,24 +226,7 @@ fun main () =
             Viewer.Word8Array3.values_into arr (Word8ArraySlice.full (!frame));
             Viewer.Word8Array3.free arr;
             dirty := false;
-            Tigr.fromArray (win, !frame);
-            (* Slide-number counter in the bottom-right corner with a shadow. *)
-            Tigr.print
-              { dest = win
-              , font = font
-              , x = px + 1
-              , y = py + 1
-              , color = Tigr.black
-              , text = label
-              };
-            Tigr.print
-              { dest = win
-              , font = font
-              , x = px
-              , y = py
-              , color = Tigr.white
-              , text = label
-              }
+            Tigr.fromArray (win, !frame)
           end
       end
 
