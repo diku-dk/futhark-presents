@@ -1,5 +1,6 @@
 PROGNAME = futhark-presents
-MLKIT    = mlkit
+
+MLKIT    ?= mlkit
 FUTHARK  ?= futhark
 SMLFUT   ?= smlfut
 TIGRDIR  = sml/lib/github.com/diku-dk/sml-tigr/clib
@@ -22,15 +23,23 @@ FUTSRC = fut/viewer.fut fut/nbody.fut fut/sand.fut
 FUTGEN = fut/viewer.c fut/viewer.h fut/viewer.json
 SMLFUTGEN = sml/viewer.sig sml/viewer.sml sml/viewer.smlfut.c
 
+OS = $(shell uname -s)
+ARCH = $(shell uname -m)
+
 # Platform detection for linker flags
 ifeq ($(OS),Windows_NT)
   LDFLAGS += -s -lopengl32 -lgdi32
 else
-  UNAME_S := $(shell uname -s)
-  ifeq ($(UNAME_S),Darwin)
-    LDFLAGS += -arch x86_64 -framework OpenGL -framework Cocoa
-    CFLAGS  += -arch x86_64
-  else ifeq ($(UNAME_S),Linux)
+  ifeq ($(OS),Darwin)
+    LDFLAGS += -framework OpenGL -framework Cocoa -L.
+    LIBS    += -libdirs . -libs 'viewer,tigr,$(FUT_LIBS)m,c,dl'
+    ifeq ($(ARCH),arm64)
+      DEPS := libtigr.so libviewer.so
+    else
+      DEPS := libtigr.a libviewer.a
+    endif
+  else ifeq ($(OS),Linux)
+    DEPS := libtigr.a libviewer.a
     LDFLAGS += -lGLU -lGL -lX11 -lm
     CFLAGS  += -fPIC
     LIBS    += -libdirs . -libs ':libviewer.a,:libtigr.a,GLU,GL,X11,$(FUT_LIBS)m,c,dl'
@@ -46,7 +55,7 @@ all: $(PROGNAME)
 # MLKit-generated objects.  Do not use --link_code for this: it replaces the
 # list of files to link, so the SML program itself would be left out of the
 # executable.
-$(PROGNAME): sml/$(PROGNAME).mlb sml/slides.sml sml/viewer.sig sml/viewer.sml libtigr.a libviewer.a
+$(PROGNAME): sml/$(PROGNAME).mlb sml/slides.sml sml/viewer.sig sml/viewer.sml $(DEPS)
 	MLCOMP=mlkit $(MLKIT) -ldexe '$(CC) $(LDFLAGS)' $(LIBS) -o $@ $<
 
 # Build a static archive from the tigr sources directly
@@ -58,6 +67,12 @@ tigr2.o: $(TIGRDIR)/tigr2.c
 
 libtigr.a: tigr.o tigr2.o
 	$(AR) rcs $@ $^
+
+$(TIGRDIR)/libtigr.so:
+	$(MAKE) -C $(TIGRDIR)
+
+libtigr.so: $(TIGRDIR)/libtigr.so
+	cp -p $(TIGRDIR)/libtigr.so $@
 
 # Compile the Futhark effects to a C library and generate SML bindings in
 # sml/.
@@ -76,6 +91,10 @@ sml/viewer.smlfut.o: sml/viewer.smlfut.c
 libviewer.a: fut/viewer.o sml/viewer.smlfut.o
 	$(AR) rcs $@ $^
 
+libviewer.so: fut/viewer.o sml/viewer.smlfut.o
+	$(CC) -shared -o $@ $^ -framework OpenGL -framework Cocoa $(if $(filter opencl,$(FUTHARK_BACKEND)),-framework OpenCL)
+
 clean:
-	rm -rf *~ *.exe *.o *.a MLB $(PROGNAME)
+	rm -rf *~ *.exe *.o *.a *.so MLB $(PROGNAME)
 	rm -rf $(FUTGEN) $(SMLFUTGEN) fut/*.o sml/*.o sml/MLB
+	$(MAKE) -C $(TIGRDIR) clean
