@@ -50,6 +50,9 @@ endif
 
 all: prepare $(PROGNAME)
 
+$(TIGRDIR)/tigr.c $(TIGRDIR)/tigr2.c: | prepare
+	test -f $@
+
 prepare: sml/lib
 
 # Build the SML program, linking tigr and the Futhark code statically.  The
