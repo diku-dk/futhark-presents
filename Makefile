@@ -98,7 +98,7 @@ libviewer.a: fut/viewer.o sml/viewer.smlfut.o
 	$(AR) rcs $@ $^
 
 libviewer.so: fut/viewer.o sml/viewer.smlfut.o
-	$(CC) -shared -o $@ $^ -framework OpenGL -framework Cocoa
+	$(CC) -shared -o $@ $^ -framework OpenGL -framework Cocoa $(if $(filter opencl,$(FUTHARK_BACKEND)),-framework OpenCL)
 
 clean:
 	rm -rf *~ *.exe *.o *.a *.so MLB $(PROGNAME)
