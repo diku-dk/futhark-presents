@@ -1,8 +1,8 @@
 PROGNAME = futhark-presents
-MLKIT    = mlkit
+
+MLKIT    ?= mlkit
 FUTHARK  ?= futhark
 SMLFUT   ?= smlfut
-SMLPKG   ?= smlpkg
 TIGRDIR  = sml/lib/github.com/diku-dk/sml-tigr/clib
 
 # Futhark backend used for the effects: c, multicore, opencl, cuda, or hip.
@@ -46,14 +46,9 @@ else
   endif
 endif
 
-.PHONY: all clean realclean prepare
+.PHONY: all clean
 
-all: prepare $(PROGNAME)
-
-$(TIGRDIR)/tigr.c $(TIGRDIR)/tigr2.c: | prepare
-	test -f $@
-
-prepare: sml/lib
+all: $(PROGNAME)
 
 # Build the SML program, linking tigr and the Futhark code statically.  The
 # archives are passed via -libs (as -l:libfoo.a) so that they appear after the
@@ -73,14 +68,10 @@ tigr2.o: $(TIGRDIR)/tigr2.c
 libtigr.a: tigr.o tigr2.o
 	$(AR) rcs $@ $^
 
-sml/lib: sml/lib/.prepared
-
-sml/lib/.prepared: sml/sml.pkg
-	(cd sml && $(SMLPKG) sync)
-	touch $@
-
-libtigr.so: sml/lib/.prepared
+$(TIGRDIR)/libtigr.so:
 	$(MAKE) -C $(TIGRDIR)
+
+libtigr.so: $(TIGRDIR)/libtigr.so
 	cp -p $(TIGRDIR)/libtigr.so $@
 
 # Compile the Futhark effects to a C library and generate SML bindings in
@@ -106,7 +97,4 @@ libviewer.so: fut/viewer.o sml/viewer.smlfut.o
 clean:
 	rm -rf *~ *.exe *.o *.a *.so MLB $(PROGNAME)
 	rm -rf $(FUTGEN) $(SMLFUTGEN) fut/*.o sml/*.o sml/MLB
-
-realclean:
-	$(MAKE) clean
-	rm -rf sml/lib
+	$(MAKE) -C $(TIGRDIR) clean
