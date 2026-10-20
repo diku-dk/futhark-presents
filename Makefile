@@ -73,12 +73,15 @@ tigr2.o: $(TIGRDIR)/tigr2.c
 libtigr.a: tigr.o tigr2.o
 	$(AR) rcs $@ $^
 
-sml/lib:
-	(cd sml; $(SMLPKG) sync)
-	$(MAKE) -C sml/lib/github.com/diku-dk/sml-tigr/clib
+sml/lib: sml/lib/.prepared
 
-libtigr.so: sml/lib
-	cp -p sml/lib/github.com/diku-dk/sml-tigr/clib/libtigr.so $@
+sml/lib/.prepared: sml/sml.pkg
+	(cd sml && $(SMLPKG) sync)
+	touch $@
+
+libtigr.so: sml/lib/.prepared
+	$(MAKE) -C $(TIGRDIR)
+	cp -p $(TIGRDIR)/libtigr.so $@
 
 # Compile the Futhark effects to a C library and generate SML bindings in
 # sml/.
