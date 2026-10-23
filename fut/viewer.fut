@@ -131,8 +131,8 @@ entry revert [h] [w] [n] (s: state [h] [w] [n]) : state [h] [w] [n] =
 
 entry advance [h] [w] [n] (s: state [h] [w] [n]) : state [h] [w] [n] =
   let chunk_size = i64.min (num_attractors n) (n - s.offset)
-  let fwd_time_step = 0.1 * 5
-  let rev_time_step = 0.2
+  let fwd_time_step = 0.5
+  let rev_time_step = 0.1
   let bodies = get_bodies s
   let orig_bodies = map2 unpack_body s.orig_bodies s.colours
   let attractors = bodies[s.offset:s.offset + chunk_size]
