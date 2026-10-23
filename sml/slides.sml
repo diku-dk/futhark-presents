@@ -112,6 +112,9 @@ fun loadState ctx (bmp: Tigr.tigr) : Viewer.Opaque.state.t =
     state
   end
 
+(* Repeat effect steps multiple times per frame, while targeting this frame rate. *)
+val target_framerate = 60
+
 fun main () =
   let
     fun usage () =
@@ -175,6 +178,16 @@ fun main () =
               (Int32.fromInt (i mod 2), !state))
           ; effect := Sand (i + 1)
           )
+
+    fun stepN left =
+      let
+        val bef = Time.toReal (Time.now ())
+        val () = step ()
+        val aft = Time.toReal (Time.now ())
+        val left = left - (aft - bef)
+      in
+        if left > 0.0 then stepN left else ()
+      end
 
     fun handleEffectKeys () =
       if keyd (Tigr.ascii #"P") then
@@ -255,7 +268,7 @@ fun main () =
             else idx
         in
           if idx' <> idx then showSlide idx' else handleEffectKeys ();
-          step ();
+          stepN (1.0 / real target_framerate);
           render idx';
           Tigr.update win;
           loop idx'
